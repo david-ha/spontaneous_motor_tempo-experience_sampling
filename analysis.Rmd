@@ -1,0 +1,263 @@
+---
+title: "Analysis Script"
+author: "David Hammerschmidt"
+date: "6/8/2022"
+output: github_document
+---
+
+This is my analysis for the study ["Spontaneous motor tempo over the course of a week: The role of the time of the day, chronotype, and arousal"](https://link.springer.com/article/10.1007/s00426-022-01646-2) published in *Psychological Research*. The document shows you every step of the analysis process starting with loading in the data, exploring and cleaning it, and finally emplowing a multilevel model. Please read the article for more details on the study design, data collection process and interpretation of the resutls.
+
+
+### Importing R packages.
+First, import some packages needed throughout the script. 
+
+```{r}
+library(readr)
+library(tidyverse)
+library(Hmisc)
+library(lme4)
+library(ggeffects)
+```
+
+
+### Downloading the data set and load it into R Studio
+Download the data from the Zenodo repository using the zen4R package. It will be stored in the project folder.
+
+```{r}
+url <- "https://zenodo.org/record/5947002/smt_esm_data.csv"
+destfile <- "C:/Users/DasDavid/Dropbox/Own Stuff/ESM/analysis/markdown/spontaneous_motor_tempo-experience_sampling"
+download.file(url, destfile)
+
+master <- read_delim("smt_esm_data.csv", ";", escape_double = FALSE)
+```
+
+
+### Data cleaning
+We don't need all the variables (i.e., features) for this analsis, so let's select the most important ones and drop NaN values. For a description of the variables, please have a look at the "smt_esm_variable_list.txt" file you downloaded with the data set.
+
+```{r}
+master <- master %>% 
+  select(order, subj_no, age, gender, gold_msi, chrono_score, chrono_cat, timediff, day, dayN, 
+         emotion_cat, emotion_catN, emotion_intensity, stress_level, paq_total, sss_score,
+         smt_ms, smt_cv, tries, activity, company, location) %>% 
+  drop_na()
+```
+
+
+Let's have a first look at the data.
+
+```{r}
+glimpse(master)
+```
+
+
+Let's clean this up a bit to make the analysis more efficient.
+
+```{r}
+master <- master %>% 
+  mutate(across(where(is.character),as_factor),
+         subj_no = as.factor(subj_no),
+         dayN = as.factor(dayN),
+         emotion_catN = as.factor(emotion_catN)
+         )
+
+summary(master)
+```
+
+
+The summary shows negative values for "timediff" which means one or more tests were done before the first prompt of a day. Let's remove these values.
+
+```{r}
+master <- master %>%
+  filter(timediff >= 0) 
+```
+
+
+Getting a first look at the spontaneous motor tempi (var = smt_ms).
+
+```{r}
+ggplot(master, aes(x=timediff, y=smt_ms)) + 
+  geom_point() +
+  labs(x="Time of the day\n(hours from first prompt)", y="SMT (ms)")
+
+ggplot(master, aes(x=smt_ms)) + 
+  geom_histogram(aes(y = ..density..), binwidth=25) + 
+  geom_density() +
+  geom_vline(aes(xintercept=mean(smt_ms)), color="red") +
+  geom_vline(aes(xintercept=median(smt_ms)),color="blue") +
+  labs(x="SMT (ms)", y="Frequency")
+```
+
+
+There seem to be outliers, so let's detect and remove them. 
+
+
+### Outlier detection
+Here, outliers are detected for each participant seperately, thus the data is split into 36 sets and the detection process is carried out the same amount of time. In order to detect the outliers, a custom function is used.
+
+```{r}
+is_outlier <- function(x) {
+  return(x < quantile(x, 0.25) - 1.5 * IQR(x) | x > quantile(x, 0.75) + 1.5 * IQR(x))
+}
+
+master %>%
+  mutate(outlier = ifelse(is_outlier(smt_ms), smt_ms, as.numeric(NA))) %>%
+  ggplot(., aes(x = subj_no, y = smt_ms)) +
+  geom_boxplot() +
+  geom_text(aes(label = outlier), na.rm = TRUE, hjust = -0.3)
+```
+
+
+### Removing outliers
+For removing outliers, an IQR of 1.5 is used.
+```{r}
+remove_outliers <- function(x, na.rm = TRUE, ...) {
+  qnt <- quantile(x, probs=c(.25, .75), na.rm = na.rm, ...)
+  H <- 1.5 * IQR(x, na.rm = na.rm)
+  y <- x
+  y[x < (qnt[1] - H)] <- NA
+  y[x > (qnt[2] + H)] <- NA
+  y
+}
+
+master <- master %>%
+  group_by(subj_no) %>%
+  mutate(smt_ms = remove_outliers(smt_ms)) %>%
+  ungroup() %>% 
+  drop_na()
+```
+
+
+Let's have a look at the cleaned data for each participant.
+
+```{r}
+ggplot(master, aes(x = timediff, y = smt_ms, group = subj_no)) +
+  coord_cartesian() +
+  geom_point() +
+  geom_smooth(method = "lm", aes(colour = subj_no)) +
+  facet_wrap(~subj_no, ncol=6) +
+  xlab("Time from first prompt") + ylab("SMT (ms)") +
+  theme(legend.position = "none")
+```
+
+### Relationship of fixed factors
+Let's have a look at the relationship between some factors since some variables measured closely related things, e.g. emotional intensitiy, stress level, and physiological arousal. In order to do so, we need to average the level-1 variables before the can compute a correlation matrix.
+```{r}
+sum_stats <- plyr::ddply(master, c("subj_no", "gold_msi", "chrono_score"), summarise,
+                         emo_int_mean = mean(emotion_intensity, na.rm = T),
+                         stress_lvl_mean = mean(stress_level, na.rm = T),
+                         paq_total_mean = mean(paq_total, na.rm = T))
+
+sum_stats %>%
+  select(emo_int_mean, paq_total_mean, stress_lvl_mean, chrono_score, gold_msi) %>% 
+  as.matrix() %>% 
+  rcorr(type = c("pearson"))
+```
+
+Here we can see that the stress level (stress_lvl_mean) and physiological arousal (paq_totol_mean) are correlated (*r* = .67, *p* < .001). Since physiological arousal increases with stress, I decided to only use the PAQ score.
+
+
+### Centering fixed factors 
+Before a multilevel model can be employed, the variables need to be centered. The within-participants (level-1) variables  (assessed with each test) are centered-within-clusters (cwc approach) and between-participant variables (level-2, assessed before the test period) are grand-mean-centered (gmc approach) since 0 is not a meaningful value for some of these inventories. 
+
+```{r}
+master <- master %>% 
+  group_by(subj_no) %>% 
+  mutate(
+    emo_int_mean = mean(emotion_intensity, na.rm = T),
+    paq_total_mean = mean(paq_total, na.rm = T),
+  ) %>% ungroup() %>%
+  mutate(
+    chrono_gmc = scale(chrono_score, center = T, scale = F),
+    gold_msi_gmc = scale(gold_msi, center = T, scale = F),
+    emotion_int_cwc = emotion_intensity - emo_int_mean,
+    paq_total_cwc = paq_total - paq_total_mean,
+  )
+```
+
+
+### Multilevel model
+Now the model can be build. 
+
+#### Unconditional model
+First step is the unconditional model.
+
+```{r}
+m.0 <- lmer(smt_ms ~ 1
+            + (1|subj_no),
+            data = master,
+            REML = FALSE)
+summary(m.0)
+```
+
+
+#### Fixed factors
+Now the fixed factors will be added to the model.
+
+```{r}
+m.1 <- lmer(smt_ms ~ timediff 
+            + paq_total_cwc
+            + gold_msi_gmc
+            + chrono_gmc
+            + (1|subj_no),
+            data = master,
+            REML = FALSE)
+summary(m.1)
+```
+
+Let's check if model performance improved.
+```{r}
+anova(m.0, m.1)
+```
+
+Yes, it did! Next step is to look for important interaction between fixed factors. In order to avoid overfitting the model, only two-way interactions are considered.
+
+```{r}
+m.2 <- lmer(smt_ms ~ timediff*gold_msi_gmc
+                + timediff*paq_total_cwc
+                + timediff*chrono_gmc
+                + gold_msi_gmc*paq_total_cwc
+                + chrono_gmc*gold_msi_gmc 
+                + paq_total_cwc*chrono_gmc
+                + (1|subj_no),
+                data = master,
+                REML = FALSE)
+
+anova(m.2)
+```
+
+The interaction between time of the day and chronotype score has a high F-value (timediff:chrono_gmc), so this interaction should be added to model and checked if the model performance improves.
+
+```{r}
+m.3 <- lmer(smt_ms ~ gold_msi_gmc 
+            + paq_total_cwc 
+            + timediff*chrono_gmc
+            + (1|subj_no),
+            data = master,
+            REML = FALSE)
+
+anova(m.1, m.2, m.3)
+```
+
+Adding this interaction improved the model whereas adding all possible interactions did not.
+
+#### Model prediction
+Now let us look at the final model and the predications.
+
+```{r}
+summary(m.3)
+
+pred_time <- ggpredict(m.3, terms = "timediff") 
+pred_int <- ggpredict(m.3, terms = c("timediff","chrono_gmc"))
+pred_paq <- ggpredict(m.3, terms = "paq_total_cwc")
+pred_msi <- ggpredict(m.3, terms = "gold_msi_gmc")
+
+plot(pred_time)
+plot(pred_int) +
+  scale_colour_brewer(palette = "Set1", labels = c("-1 SD (evening type)", "Mean (neither)", "+1 SD (morning type)"))
+plot(pred_paq)
+plot(pred_msi)
+
+```
+
+

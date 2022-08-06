@@ -1,0 +1,201 @@
+﻿Variable list InnerTiming ESM
+
+Order = order of measurements
+
+
+univariate:
+
+	
+	demographic: 
+
+		gender = gender of participant
+			- male
+			- female
+
+
+		age = age of participants in years
+
+
+		
+		education = school degree of participant
+			1 = Ich bin derzeit Schüler/-in, besuche eine allgemeinbildende Vollzeitschule
+			2 = Von der Schule abgegangen ohne Hauptschulabschluss (Volksschulabschluss)
+			3 = Ich habe einen Hauptschulabschluss
+			4 = Ich habe einen mittleren Abschluss (Mittlere Reife,polytechnische Oberschule)
+			5 = Ich habe die Fachhochschulreife (Abschluss einer Fachoberschule)
+			6 = Allgemeine oder fachgebundene Hochschulreife/Abitur
+			-9 = nicht beantwortet
+
+		training = higher education of participants
+			1 = Noch in beruflicher Ausbildung (Auszubildende(r), Praktikant/-in, Student/-in)
+			2 = Schüler/-inund besuche eine berufsorientierte Aufbau-, Fachschule o. Ä.
+			3 = Ich habe keinenberuflichen Abschluss und bin nicht in beruflicher Ausbildung
+			4 = Beruflich-betriebliche Berufsausbildung (Lehre) abgeschlossen
+			5 = Beruflich-schulische Ausbildung (z.B. Berufsfachschule, Handelsschule abgeschlossen)
+			6 = Ausbildung an einer Meister-, Technikerschule, Berufs-oder Fachakademie abgeschlossen
+			7 = Bachelor an (Fach-)Hochschule abgeschlossen
+			8 = Fachhochschulabschluss (z. B. Diplom, Master)
+			9 = Universitätsabschluss (z. B. Diplom, Magister, Staatsexamen, Master)
+			10 = Promotion
+			-9 = nicht beantwortet
+
+		profession = job field of participant
+			1 = Bau, Architektur, Vermessung
+			2 = Dienstleistung
+			3 = Elektro
+			4 = IT, Computer
+			5 = Kunst, Kultur, Gestaltung
+			6 = Landwirtschaft, Natur, Umwelt
+			7 = Medien
+			8 = Metall, Maschinenbau
+			9 = Wissenschaft, Bildung
+			10 = Produktion, Fertigung
+			11 = Soziales, Pädagogik
+			12 = Technik, Technologiefelder
+			13 = Verkehr, Logistik
+			14 = Wirtschaft, Verwaltung
+			-9 = nicht beantwortet
+
+		employment = employment status of participant
+			1 = Angestelltenverhältnis
+			2 = Leiharbeit
+			3 = Minijob
+			4 = Teilzeit
+			5 = Selbstständigkeit
+			6 = Kein Beschäftigungsverhältnis
+			-9 = nicht beantwortet
+
+
+covariates/between factors:
+
+		chrono_cat = category of chronotype (D-MEQ)
+			- morning
+			- evening
+			- neither
+
+		chrono_score = score of chronotype (D-MEQ)
+			- definite evening (14 – 30)
+			- moderate evening (31 – 41)
+			- intermediate (42 – 58) 
+			- moderate morning (59 – 69)
+			- definite morning (70 – 86)
+
+		gold-msi = musical sophistication index general factor (score)
+
+		instrument = best played instrument
+
+		
+
+
+
+multivariate:
+
+	time of measurement:
+
+		date = time and date of measurement
+
+		day = day of measurement
+			- Monday
+			- Tuesday
+			- Wednesday
+			- Thursday
+			- Friday
+			- Saturday
+			- Sunday
+
+		
+		tries = number of tries for successful tapping (threshold: cv = .35)
+
+		smt_ms = inter-tap intervals in milliseconds (duration = 25 seconds)
+
+		smt_cv = coefficient of variation of inter-tap intervals
+
+	
+	exp_duration = duration of test execution in milliseconds 
+
+
+	emotional states:
+
+
+		stress_level = level of stress felt by participants
+			1 = not at all
+			7 = very
+
+		paq_total = score of Physiological Arousal Questionnaire (PAQ) (sum of rating: higher score = higher arousal)
+
+
+	
+	situation:
+
+		location = location of participant during measurement
+			- home
+			- transport
+			- work/university/school
+			- outdoors
+			- shop
+			- cafe
+			- another person's home
+			- concert/theatre
+			- church
+			- party
+			- gym
+			- pub/disco
+			- restaurant
+			- other (participants specified their location)
+
+		activity = main activity during the measurement
+			- work/study
+			- travel
+			- social interaktion
+			- house work
+			- watching TV/movie
+			- listening to music
+			- physical activity
+			- shopping
+			- having a meal
+			- relaxation
+			- partying
+			- computer games
+			- concert/theatre attendance
+			- other (participants specified their activity)
+
+		company = people around participant during measurement
+			- nobody, I am alone
+			- partner or friend
+			- my family
+			- an acquaintance or colleague
+			- several friends or acquaintances
+			- one or more strangers
+			- a large crowd
+
+	
+	
+
+
+ 
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
